@@ -7,10 +7,6 @@
 ;; Package-Requires: ((emacs "26.0"))
 ;; URL: https://github.com/sankaku/onsight
 
-;; MIT License
-;; 
-;; Copyright (c) 2017 sankaku
-;; 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
 ;; of this software and associated documentation files (the "Software"), to deal
 ;; in the Software without restriction, including without limitation the rights
@@ -33,6 +29,8 @@
 
 ;;; Code:
 
+(require 'cl)
+
 (setq onsight--divide-array '((2 2) (2 2) (2 2)))
 
 (defun onsight--calc-division (left-up right-bottom vertical-division horizontal-division)
@@ -48,5 +46,9 @@
   "Move cursor to (row . column)."
   (move-to-window-line row)
   (move-to-column column))
+
+(defun onsight--zip-all-combi (list1 list2)
+  "((a b) (A B C)) -> ((a . A) (a . B) (a . C) (b . A) ( b . B) (b . C))"
+  (reduce #'append (mapcar (lambda (x)(mapcar (lambda (y) (cons x y)) list2)) list1)))
 
 ;;; onsight.el ends here
