@@ -40,6 +40,7 @@
         (onsight--simple-divide (cdr left-up) (cdr right-bottom) horizontal-division)))
 
 (defun onsight--simple-divide (from to division)
+  "(1 20 3) -> 6"
   (floor (/ (- to from) division)))
 
 (defun onsight--move-to-rc (row column)
@@ -50,5 +51,11 @@
 (defun onsight--zip-all-combi (list1 list2)
   "((a b) (A B C)) -> ((a . A) (a . B) (a . C) (b . A) ( b . B) (b . C))"
   (reduce #'append (mapcar (lambda (x)(mapcar (lambda (y) (cons x y)) list2)) list1)))
+
+(defun onsight--simple-split (from to width l)
+  "(1 20 6 nil) -> (1 7 13 20)"
+  (if (<= to (+ from width))
+      (append l (list to))
+    (onsight--simple-split (+ from width) to width (append l (list from)))))
 
 ;;; onsight.el ends here
