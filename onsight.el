@@ -33,11 +33,18 @@
 
 (setq onsight--divide-array '((2 2) (2 2) (2 2)))
 
-(defun onsight--calc-division (left-up right-bottom vertical-division horizontal-division)
+(defun onsight--calc-division (left-top right-bottom vertical-division horizontal-division)
   "Divide the rectangle.
-  left-up and right-down are both cons cells."
-  (list (onsight--simple-divide (car left-up) (car right-bottom) vertical-division)
-        (onsight--simple-divide (cdr left-up) (cdr right-bottom) horizontal-division)))
+  left-top and right-bottom are both cons cells.
+  ((1 . 1) (25 . 30) 2 3) -> ((1 . 1) (1 . 10) (1 . 19) (1 . 30) (13 . 1) (13 . 10) (13 . 19) (13 . 30) (25 . 1) (25 . 10) (25 . 19) (25 . 30))"
+  (let ((r0 (car left-top))
+        (c0 (cdr left-top))
+        (r1 (car right-bottom))
+        (c1 (cdr right-bottom)))
+    (onsight--zip-all-combi
+           (onsight--simple-split r0 r1 (onsight--simple-divide r0 r1 vertical-division) nil)
+           (onsight--simple-split c0 c1 (onsight--simple-divide c0 c1 horizontal-division) nil))))
+
 
 (defun onsight--simple-divide (from to division)
   "(1 20 3) -> 6"
@@ -54,7 +61,7 @@
 
 (defun onsight--simple-split (from to width l)
   "(1 20 6 nil) -> (1 7 13 20)"
-  (if (<= to (+ from width))
+  (if (< to (+ from width))
       (append l (list to))
     (onsight--simple-split (+ from width) to width (append l (list from)))))
 
