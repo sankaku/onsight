@@ -32,6 +32,8 @@
 (require 'cl)
 
 (setq onsight--divide-array '((2 2) (2 2) (2 2)))
+(defvar onsight--ovrs-list nil)
+
 
 (defun onsight--calc-division (left-top right-bottom vertical-division horizontal-division)
   "Divide the rectangle.
@@ -64,5 +66,67 @@
   (if (< to (+ from width))
       (append l (list to))
     (onsight--simple-split (+ from width) to width (append l (list from)))))
+
+(defun onsight--make-add-string (line-end-column bgn-column end-column face)
+  "Returns string with face for adding after `line-end-column`.
+   If `line-end-column` is less than `bgn-column`
+   this returns transparent blanks (for adding before `bgn-column`) and colored blanks with `face` (for adding between `bgn-column` and `end-column`).
+   If it is between `bgn-column` and `end-column` this returns colored blanks between `line-end-column` and `end-column`.
+   If it is bigger than `end-column` this returns empty string."
+  (let* ((transparent-blanks (make-string (max 0 (- bgn-column line-end-column)) ? ))
+         (colored-blanks (propertize (make-string (max 0 (- end-column (max bgn-column line-end-column))) ? ) 'face face)))
+    (concat transparent-blanks colored-blanks)))
+
+(defun onsight--make-ovrs (line-end-column bgn-column end-column)
+  "Returns a cons cell of two overlays for the current line:
+   to setting background color for existing text and to adding string for end of line."
+  (let* ((before-p (< line-end-column bgn-column))
+         (after-p (> line-end-column end-column))
+         (line-bgn-point (line-beginning-position))
+         (line-end-point (line-end-position))
+         (bgn-point (save-excursion (move-to-column bgn-column) (point)))
+         (end-point (save-excursion (move-to-column end-column) (point)))
+         (text-ovr (cond (before-p
+                          (make-overlay line-end-point line-end-point))
+                         (after-p
+                          (make-overlay bgn-point end-point))
+                         (t
+                          (make-overlay bgn-point line-end-point))))
+         (add-string-ovr (make-overlay line-end-point line-end-point)))
+    `(,text-ovr . ,add-string-ovr)))
+
+(defun onsight--put-ovrs (bgn-column end-column face)
+  "Put overlays between `bgn-column` and `end-column` of the current line with `face`."
+  (let* ((line-end-column (save-excursion (end-of-line) (current-column)))
+         (ovrs (onsight--make-ovrs line-end-column bgn-column end-column))
+         (text-ovr (car ovrs))
+         (add-string-ovr (cdr ovrs))
+         (add-string (onsight--make-add-string line-end-column bgn-column end-column face)))
+    (overlay-put text-ovr 'face face)
+    (overlay-put add-string-ovr 'after-string add-string)
+    (push text-ovr onsight--ovrs-list)
+    (push add-string-ovr onsight--ovrs-list)))
+
+(defun onsight--put-ovrs-rectangle (left-top right-bottom face)
+  "Put overlays for the rectangle.
+   The vertices of the rectangle, `left-top` and `right-bottom`, are both cons cells."
+  (let* ((bgn-line (car left-top))
+         (end-line (car right-bottom))
+         (lines (number-sequence bgn-line end-line))
+         (bgn-column (cdr left-top))
+         (end-column (cdr right-bottom)))
+    (save-excursion
+      (dolist (line lines)
+        (move-to-window-line line)
+        (onsight--put-ovrs bgn-column end-column face)))))
+
+;(onsight--put-ovrs-rectangle '(10 . 10) '(15 . 80) '(t :background "red"))
+;(onsight--put-ovrs-rectangle '(16 . 20) '(35 . 70) '(t :background "blue"))
+
+(defun onsight--clear-ovrs ()
+  "Delete all overlays."
+  (interactive)
+  (dotimes (x (length onsight--ovrs-list))
+    (delete-overlay (pop onsight--ovrs-list))))
 
 ;;; onsight.el ends here
