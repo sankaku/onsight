@@ -82,10 +82,9 @@
    to setting background color for existing text and to adding string for end of line."
   (let* ((before-p (< line-end-column bgn-column))
          (after-p (> line-end-column end-column))
-         (line-bgn-point (line-beginning-position))
-         (line-end-point (line-end-position))
-         (bgn-point (save-excursion (move-to-column bgn-column) (point)))
-         (end-point (save-excursion (move-to-column end-column) (point)))
+         (line-end-point (save-excursion (onsight--move-to-column line-end-column) (point)))
+         (bgn-point (save-excursion (onsight--move-to-column bgn-column) (point)))
+         (end-point (save-excursion (onsight--move-to-column end-column) (point)))
          (text-ovr (cond (before-p
                           (make-overlay line-end-point line-end-point))
                          (after-p
@@ -95,9 +94,18 @@
          (add-string-ovr (make-overlay line-end-point line-end-point)))
     `(,text-ovr . ,add-string-ovr)))
 
+(defun onsight--move-to-column (column)
+  (vertical-motion `(,column . 0)))
+
+(defun onsight--get-line-end-column ()
+  "TODO truncated"
+  (save-excursion
+    (vertical-motion `(,(1- (window-body-width)) . 0 ))
+    (current-column)))
+
 (defun onsight--put-ovrs (bgn-column end-column face)
   "Put overlays between `bgn-column` and `end-column` of the current line with `face`."
-  (let* ((line-end-column (save-excursion (end-of-line) (current-column)))
+  (let* ((line-end-column (onsight--get-line-end-column))
          (ovrs (onsight--make-ovrs line-end-column bgn-column end-column))
          (text-ovr (car ovrs))
          (add-string-ovr (cdr ovrs))
